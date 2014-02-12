@@ -1,4 +1,5 @@
 import sys
+import time
 from multiprocessing import Pool
 from urlparse import urljoin
 
@@ -39,7 +40,14 @@ def get_all_anchor_url(page_url, keywords=None):
     """return all anchors' absolute url, 
        if formats provided, return the matches ones
     """
-    bs = build_bs(page_url)
+    while True:
+        try:
+            bs = build_bs(page_url)
+        except:
+            bs = ""
+            time.sleep(5)
+
+        if bs: break
 
     # retrive value of 'href' attribute in all anchors
     anchors_url = [a['href'] for a in list(bs.findAll("a"))]
