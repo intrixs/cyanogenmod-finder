@@ -8,6 +8,5 @@ Requirements: run 'pip install -r requirements.txt'
 Command: python find_cm.py [model]
 
 ###TO-DO:
-* Add multiprocess support
 * Prettify commandline output
 * Add more commandline options
