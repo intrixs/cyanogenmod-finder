@@ -3,12 +3,11 @@ cyanogenmod-finder
 
 Find download links of CyanogenMod package through http://oss.reflected.net/jenkins  
   
+Requirements: run 'pip install -r requirements.txt'
   
-Provide a model name, and it will output all the related zip download links.
-Example: python find_cm.py 9100
-Result will be saved to 'cm_9100_links.txt'
-
+Command: python find_cm.py [model]
 
 ###TO-DO:
+* Add multiprocess support
 * Prettify commandline output
 * Add more commandline options
