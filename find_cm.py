@@ -1,4 +1,5 @@
 import sys
+import re
 import time
 from multiprocessing import Pool
 from urlparse import urljoin
@@ -9,7 +10,7 @@ import requests
 BASE_URL = "http://oss.reflected.net/jenkins/"
 MAX_PROCESSES = 20
 
-# if model & output file not provided use default value
+# Use default value if no command-line argument provided
 try:
     MODEL, OUTPUT = sys.argv[1], sys.argv[2]
 except:
@@ -21,30 +22,40 @@ def build_bs(url):
     r = requests.get(url)
     return BeautifulSoup(r.text)
 
-def url_filter(url, keywords=None):
+#def _filter(string, search_strs, match_all=False):
+    #"""return true if any/all of the search_strs found in string when match_all is False/True"""
+
+def keyword_filter(url, keywords=None):
     """return true if url contains all keywords,
        return false otherwise 
     """
-    if not keywords:
-        return True
-
+    if not keywords: return True
     return all(keyword in url for keyword in keywords)
 
-def write_links(links):
+def file_filter(url, filetypes=None):
+    """return true if url is of any type in the file types,
+       return false otherwise 
+    """
+    if not filetypes: return True
+    return any(filetype in url.split(".")[-1] for filetype in filetypes)
+
+def save_links(links):
     """ write a list of links to file"""
     with open(OUTPUT, 'a+') as f:
         for link in links:
             f.write(link + "\n")
 
-def get_all_anchor_url(page_url, keywords=None):  
+def get_anchor_url(page_url, keywords=None):  
     """return all anchors' absolute url, 
        if formats provided, return the matches ones
     """
+    bs = None
+
     while True:
         try:
             bs = build_bs(page_url)
         except:
-            bs = ""
+            # sleep for 5 seconds and try again
             time.sleep(5)
 
         if bs: break
@@ -54,19 +65,31 @@ def get_all_anchor_url(page_url, keywords=None):
 
     # join absolute url: page_url + anchors_url, assume that all 
     # anchor_url is relative url. Apply keyword filter to the results
-    anchors_abs_url = [urljoin(page_url, url) for url in anchors_url if url_filter(url, keywords)]
+    anchors_abs_url = [urljoin(page_url, url) for url in anchors_url if keyword_filter(url, keywords)]
+
     return anchors_abs_url
 
-def get_all_zip_url(dir_url):
-    keywords = [MODEL, "zip"]
-    zip_urls = get_all_anchor_url(dir_url, keywords)
-    write_links(zip_urls)
+def get_zip_url(dir_url):
+    """return all the absolute url of zip file"""
+    zip_urls = get_anchor_url(dir_url, keywords=[MODEL,])
+    zip_urls = [url for url in zip_urls if file_filter(url, filetypes=['zip'])]
+    save_links(zip_urls)
+
+#def extract(url, pattern=None):
+    #"""use pattern to retrive information from the url"""
+    #PATTERNS = {
+        #"DATE":"DATE_PATTERN",
+        #"VERSION":"VERSION_PATTERN",
+        #"RELEASE":"RELEASE_PATTERN",
+    #}
+    #return re.findall(PATTERNS.get(pattern), url)
 
 if __name__ == "__main__":
     # find all the dir urls
-    dir_urls = get_all_anchor_url(BASE_URL)
+    urls = get_anchor_url(BASE_URL)
 
     pool = Pool(MAX_PROCESSES)
-    pool.map(get_all_zip_url, dir_urls) 
+    pool.map(get_zip_url, urls) 
+
     pool.close()
     pool.join()
